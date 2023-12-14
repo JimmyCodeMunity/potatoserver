@@ -1,0 +1,165 @@
+import React, { useState, useEffect } from 'react';
+import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, SafeAreaView, TextInput } from 'react-native';
+
+const BrandView = ({ route }) => {
+  const [brandData, setBrandData] = useState(null);
+  const [selectedSubcategory, setSelectedSubcategory] = useState(null);
+  const [products, setProducts] = useState([]);
+  const [productsNotFound, setProductsNotFound] = useState(false);
+  const { brandcat1, brandName } = route.params;
+
+  useEffect(() => {
+    // Fetch the data from the API (you can use Axios, Fetch API, or any other method)
+    // and set the response to the brandData state.
+    // For simplicity, let's assume you have already fetched the data.
+    const fetchedData = {
+      "_id": "64be261bd5fae142a202ab43",
+      "brandname": brandName,
+      "brandimage": "https://images.pexels.com/photos/13748756/pexels-photo-13748756.jpeg?auto=compress&cs=tinysrgb&w=600",
+      "categories": "Electronics",
+      "subcategories": brandcat1,
+      "__v": 0
+    };
+
+    // Process the subcategories string into an array of subcategory names
+    if (fetchedData && fetchedData.subcategories && fetchedData.subcategories.length > 0) {
+      const subcategoriesArray = fetchedData.subcategories[0].split(',');
+      setBrandData({ ...fetchedData, subcategories: subcategoriesArray });
+    }
+  }, []);
+
+  useEffect(() => {
+    // Fetch products from the API based on the selected category
+    // Replace 'YOUR_API_URL' with the actual API endpoint to fetch products
+    const fetchProducts = async () => {
+      try {
+        const response = await fetch(`http://192.168.2.114:3000/productlistcategory/${selectedSubcategory}`);
+        const data = await response.json();
+        if (data.length > 0) {
+          setProducts(data);
+          setProductsNotFound(false);
+        } else {
+          setProducts([]);
+          setProductsNotFound(true);
+        }
+      } catch (error) {
+        console.error('Error fetching products:', error);
+      }
+    };
+
+    // Call the fetchProducts function when the selectedSubcategory changes
+    if (selectedSubcategory) {
+      fetchProducts();
+    }
+  }, [selectedSubcategory]);
+
+  const renderProductCard = ({ item }) => {
+    return (
+      <View style={styles.productCard}>
+        <Image source={{ uri: item.image }} style={styles.productImage} />
+        <Text style={styles.productName}>{item.productname}</Text>
+        <Text style={styles.productPrice}>{item.price}</Text>
+        {/* Add other product details here */}
+      </View>
+    );
+  };
+
+  return (
+    <SafeAreaView style={styles.container}>
+      {brandData && (
+        <View style={styles.body}>
+          <Text style={{ color: 'orange', fontSize: 23, fontWeight: 'bold', marginBottom: 10, paddingVertical: 30, }}>{brandData.brandname}</Text>
+          <TextInput style={styles.search} placeholder="search for products from " />
+          <Text style={{ color: 'orange', fontSize: 18, }}>What are you looking for?</Text>
+          <FlatList
+            data={brandData.subcategories}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                onPress={() => setSelectedSubcategory(item)}
+                style={[
+                  styles.subcategoryButton,
+                  selectedSubcategory === item && styles.selectedSubcategoryButton
+                ]}
+              >
+                <Text style={styles.subcategoryButtonText}>{item}</Text>
+              </TouchableOpacity>
+            )}
+            keyExtractor={(item) => item}
+            horizontal
+          />
+        </View>
+      )}
+
+      {productsNotFound ? (
+        <Text style={styles.noProductsText}>No products found for this subcategory.</Text>
+      ) : (
+        <FlatList
+          style={{ paddingHorizontal: 30, }}
+          data={products}
+          renderItem={renderProductCard}
+          keyExtractor={(item) => item.productId}
+        />
+      )}
+    </SafeAreaView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    backgroundColor: "#fff",
+    flex: 1,
+  },
+  body: {
+    paddingHorizontal: 30,
+  },
+  search: {
+    height: 40,
+    borderColor: 'orange',
+    borderWidth: 1,
+    borderRadius: 9,
+    paddingHorizontal: 12,
+    marginBottom: 23,
+  },
+  subcategoryButton: {
+    borderColor: 'orange',
+    borderWidth: 1,
+    padding: 3,
+    borderRadius: 9,
+    margin: 5,
+  },
+  selectedSubcategoryButton: {
+    backgroundColor: 'orange',
+  },
+  subcategoryButtonText: {
+    padding: 12,
+    marginLeft: 10,
+  },
+  noProductsText: {
+    textAlign: 'center',
+    marginTop: 20,
+    fontSize: 18,
+    color: 'gray',
+  },
+  productCard: {
+    borderWidth: 1,
+    borderColor: 'gray',
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 15,
+  },
+  productImage: {
+    width: 100,
+    height: 100,
+    resizeMode: 'cover',
+    marginBottom: 5,
+  },
+  productName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  productPrice: {
+    fontSize: 14,
+  },
+});
+
+export default BrandView;
